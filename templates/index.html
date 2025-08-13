@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Device Scanner</title>
+  <!-- Только Alpine.js + Socket.IO -->
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+  <style>
+    body { font-family: sans-serif; max-width: 1000px; margin: 0 auto; padding: 20px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { padding: 8px 12px; text-align: left; border-bottom: 1px solid #eee; }
+    .signal { width: 80px; height: 4px; background: #eee; border-radius: 2px; }
+    .signal > div { height: 100%; background: #2ecc71; border-radius: 2px; }
+    .wifi { color: #3498db; } .bt { color: #e74c3c; } .ble { color: #9b59b6; }
+    .offline { opacity: 0.5; }
+    details > summary { cursor: pointer; outline: none; }
+    details > div { margin-top: 5px; font-size: 0.9em; color: #666; }
+    @media (prefers-color-scheme: dark) {
+      body { background: #222; color: #eee; }
+      th, td { border-color: #444; }
+      .signal { background: #444; }
+      details > div { color: #aaa; }
+    }
+  </style>
+</head>
+<body x-data="app">
+  <h1>Device Scanner</h1>
+  <p>Last update: <span x-text="lastUpdate || '--:--:--'"></span></p>
+
+  <table>
+	  <thead><tr><th>MAC</th><th>Type</th><th>Sec</th><th>Name</th><th>RSSI</th><th>Signal</th><th>Services</th><th>Seen</th></tr></thead>
+    <tbody>
+      <template x-if="!devices.length"><tr><td colspan="8">Scanning...</td></tr></template>
+      <template x-for="d in devices" :key="d.mac">
+        <tr :class="{ offline: !d.online }">
+          <td x-text="d.mac.split('_')[0]"></td>
+          <td :class="d.type" x-text="d.type.toUpperCase()"></td>
+          <td x-text="d.security"></td>
+          <td x-text="d.name || d.ssid || '-'"></td>
+          <td x-text="d.rssi || '?'"></td>
+          <td><div class="signal"><div :style="'width:'+(100+(d.rssi||-100)/0.7)+'%'"></div></div></td>
+          <td>
+            <template x-if="d.services">
+              <details>
+                <summary x-text="d.services.length"></summary>
+		<div x-html="d.services.filter(v=>v).sort().join('<br>')"></div>
+              </details>
+            </template>
+          </td>
+          <td x-text="new Date(d.last_seen).toLocaleTimeString()"></td>
+        </tr>
+      </template>
+    </tbody>
+  </table>
+
+  <script>
+    document.addEventListener('alpine:init', () => {
+      Alpine.data('app', () => ({
+        devices: [],
+        lastUpdate: null,
+        init() {
+          const socket = io();
+          socket.on('devices_update', devices => {
+            this.lastUpdate = new Date().toLocaleTimeString();
+            this.devices = Object.entries(devices).map(([mac, d]) => ({ mac, ...d }));
+          });
+        }
+      }));
+    });
+  </script>
+</body>
+</html>
