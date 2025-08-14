@@ -38,7 +38,7 @@
           <td x-text="d.security"></td>
           <td x-text="d.name || d.ssid || '-'"></td>
           <td x-text="d.rssi || '?'"></td>
-          <td><div class="signal"><div :style="'width:'+(100+(d.rssi||-100)/0.7)+'%'"></div></div></td>
+          <td><div class="signal"><div :style="'width:'+((100+(d.rssi||-100)/0.7)>0?(100+(d.rssi||-100)/0.7):0)+'%'"></div></div></td>
           <td>
             <template x-if="d.services">
               <details>
